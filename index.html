@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wizyty Monitoringowe</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:   #1a2744;
+    --blue:   #2563eb;
+    --blue2:  #1d4ed8;
+    --p171:   #166534;
+    --p171l:  #dcfce7;
+    --p172:   #92400e;
+    --p172l:  #fef3c7;
+    --p66:    #9a3412;
+    --p66l:   #ffedd5;
+    --wkend:  #fefce8;
+    --wkend-b:#ca8a04;
+    --bg:     #f8fafc;
+    --surface:#ffffff;
+    --border: #e2e8f0;
+    --text:   #0f172a;
+    --muted:  #64748b;
+    --ok:     #16a34a;
+    --warn:   #d97706;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--navy);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+  }
+  header h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 0.04em;
+  }
+  header .badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    background: var(--blue);
+    color: #fff;
+    padding: 2px 10px;
+    border-radius: 999px;
+  }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    background: var(--navy);
+    padding: 0 2rem;
+    gap: 2px;
+    border-bottom: 2px solid var(--blue);
+  }
+  .tab {
+    padding: 10px 20px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #94a3b8;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all .15s;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  .tab:hover { color: #fff; }
+  .tab.active { color: #fff; border-bottom-color: var(--blue); }
+  .tab[data-proj="17.1"].active { border-bottom-color: #4ade80; color: #4ade80; }
+  .tab[data-proj="17.2"].active { border-bottom-color: #fbbf24; color: #fbbf24; }
+  .tab[data-proj="6.6"].active  { border-bottom-color: #fb923c; color: #fb923c; }
+
+  /* ── MAIN ── */
+  main { padding: 1.5rem 2rem; max-width: 1400px; margin: 0 auto; }
+
+  /* ── CONFIG BANNER ── */
+  #config-banner { display:none; }
+  #config-banner.show {
+    background: #fef9c3;
+    border: 1px solid #fde047;
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.85rem;
+  }
+  #config-banner .icon { font-size: 1.4rem; }
+  #config-banner strong { display: block; margin-bottom: 4px; }
+  #config-banner input {
+    margin-top: 6px;
+    padding: 6px 10px;
+    border: 1px solid #fde047;
+    border-radius: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    width: 420px;
+    background: #fff;
+  }
+  #config-banner button {
+    margin-left: 8px;
+    padding: 6px 14px;
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+
+  /* ── FORM SECTION ── */
+  .form-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .form-card h2 {
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .form-grid .wide { grid-column: span 2; }
+  .form-grid .full { grid-column: 1 / -1; }
+
+  label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+  input, select, textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.88rem;
+    color: var(--text);
+    background: var(--bg);
+    transition: border-color .15s;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--blue);
+    background: #fff;
+  }
+  textarea { resize: vertical; min-height: 60px; }
+
+  .btn-submit {
+    margin-top: 1rem;
+    padding: 10px 28px;
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s, transform .1s;
+    letter-spacing: 0.02em;
+  }
+  .btn-submit:hover { background: var(--blue2); }
+  .btn-submit:active { transform: scale(0.98); }
+  .btn-submit:disabled { background: #94a3b8; cursor: not-allowed; }
+
+  .proj-171 .btn-submit { background: var(--p171); }
+  .proj-171 .btn-submit:hover { background: #14532d; }
+  .proj-172 .btn-submit { background: var(--p172); }
+  .proj-172 .btn-submit:hover { background: #78350f; }
+  .proj-66  .btn-submit { background: var(--p66); }
+  .proj-66  .btn-submit:hover { background: #7c2d12; }
+
+  .msg {
+    margin-top: 10px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: none;
+  }
+  .msg.ok  { background: var(--p171l); color: var(--ok); display: block; }
+  .msg.err { background: #fee2e2; color: #dc2626; display: block; }
+
+  /* ── TABLE ── */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .table-header h2 {
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+  .btn-refresh {
+    padding: 5px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #fff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--muted);
+    transition: all .15s;
+  }
+  .btn-refresh:hover { border-color: var(--blue); color: var(--blue); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  thead tr { background: var(--navy); }
+  thead th {
+    padding: 9px 10px;
+    text-align: left;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #94a3b8;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+  tbody tr:hover { background: #f1f5f9; }
+  tbody tr.weekend { background: var(--wkend); }
+  tbody tr.weekend:hover { background: #fef08a; }
+  tbody td { padding: 8px 10px; vertical-align: middle; }
+  tbody td .proj-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .tag-171 { background: var(--p171l); color: var(--p171); }
+  .tag-172 { background: var(--p172l); color: var(--p172); }
+  .tag-66  { background: var(--p66l);  color: var(--p66);  }
+  .tag-wk  { background: #fef9c3; color: var(--wkend-b); font-size: 0.65rem; margin-left: 4px; }
+
+  .empty-state {
+    padding: 3rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+
+  /* ── SUMMARY TAB ── */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+  @media (max-width: 900px) { .summary-grid { grid-template-columns: 1fr; } }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .stat-card h3 {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+
+  .stat-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+  .stat-table th {
+    text-align: left;
+    padding: 6px 10px;
+    background: var(--bg);
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    border-bottom: 2px solid var(--border);
+  }
+  .stat-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  .stat-table tr:last-child td { border-bottom: none; font-weight: 700; }
+
+  .num { font-family: 'IBM Plex Mono', monospace; font-weight: 600; text-align: right; }
+
+  /* weekend optimization */
+  .opt-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    grid-column: 1 / -1;
+  }
+  .opt-card h3 {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+  .opt-day {
+    margin-bottom: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .opt-day-header {
+    background: var(--navy);
+    color: #fff;
+    padding: 8px 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .opt-day-header .pill {
+    background: var(--blue);
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+  }
+  .opt-day-header .pill.combine { background: var(--ok); }
+  .opt-persons {
+    padding: 10px 14px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    background: var(--wkend);
+  }
+  .person-chip {
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-family: 'IBM Plex Mono', monospace;
+    background: #fff;
+    border: 1px solid var(--border);
+  }
+  .opt-rows { padding: 0 14px 10px; }
+  .opt-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.82rem;
+  }
+  .opt-row:last-child { border-bottom: none; }
+  .combine-banner {
+    background: #dcfce7;
+    border: 1px solid #86efac;
+    color: #166534;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin-top: 6px;
+  }
+
+  /* loading */
+  .loading {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid #e2e8f0;
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .section-hidden { display: none; }
+
+  /* proj color accents on form cards */
+  .proj-171 { border-top: 3px solid #4ade80; }
+  .proj-172 { border-top: 3px solid #fbbf24; }
+  .proj-66  { border-top: 3px solid #fb923c; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⬡ WIZYTY MONITORINGOWE</h1>
+  <span class="badge">17.1 · 17.2 · 6.6</span>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-tab="form" data-proj="all">+ Dodaj wizytę</div>
+  <div class="tab" data-tab="list171" data-proj="17.1">Projekt 17.1</div>
+  <div class="tab" data-tab="list172" data-proj="17.2">Projekt 17.2</div>
+  <div class="tab" data-tab="list66"  data-proj="6.6">Projekt 6.6</div>
+  <div class="tab" data-tab="summary" data-proj="all">Podsumowanie</div>
+</div>
+
+<main>
+
+  <!-- CONFIG BANNER -->
+  <div id="config-banner">
+    <div class="icon">⚙️</div>
+    <div style="flex:1">
+      <strong>Konfiguracja – wklej ID swojego Google Sheets</strong>
+      Otwórz swój Google Sheet, skopiuj ID z adresu URL (część między /d/ a /edit) i wklej poniżej.
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="text" id="sheet-id-input" placeholder="np. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms" />
+        <button onclick="saveSheetId()">Zapisz</button>
+      </div>
+      <div style="margin-top:6px;font-size:0.75rem;color:#92400e">
+        ⚠️ Pamiętaj też: w Google Sheet → Extensions → Apps Script – wklej podany skrypt (instrukcja poniżej).
+        <a href="#instrukcja" style="color:var(--blue);text-decoration:underline">Pokaż instrukcję</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TAB: FORMULARZ ═══ -->
+  <div id="tab-form">
+
+    <div class="form-card proj-171">
+      <h2>Nowa wizyta</h2>
+      <div class="form-grid">
+        <div>
+          <label>Projekt *</label>
+          <select id="f-proj" onchange="updateStala()">
+            <option value="">— wybierz —</option>
+            <option value="17.1">17.1</option>
+            <option value="17.2">17.2</option>
+            <option value="6.6">6.6</option>
+          </select>
+        </div>
+        <div>
+          <label>Data *</label>
+          <input type="date" id="f-data" />
+        </div>
+        <div class="wide">
+          <label>Nr usługi</label>
+          <input type="text" id="f-nruslugi" placeholder="np. 2026/02/09/161227/3317741" />
+        </div>
+        <div class="wide">
+          <label>Firma *</label>
+          <input type="text" id="f-firma" placeholder="Nazwa firmy / podmiotu" />
+        </div>
+        <div>
+          <label>Ilość osób</label>
+          <input type="number" id="f-ilosc" min="1" placeholder="np. 5" />
+        </div>
+        <div>
+          <label>Forma *</label>
+          <select id="f-forma">
+            <option value="">— wybierz —</option>
+            <option value="Stacjonarna">Stacjonarna</option>
+            <option value="Zdalna">Zdalna</option>
+            <option value="Mieszana">Mieszana</option>
+          </select>
+        </div>
+        <div>
+          <label>Miejsce</label>
+          <input type="text" id="f-miejsce" placeholder="Miasto / adres" />
+        </div>
+        <div>
+          <label>Osoba stała *</label>
+          <select id="f-stala">
+            <option value="">— wybierz projekt —</option>
+          </select>
+        </div>
+        <div>
+          <label>Świadek</label>
+          <select id="f-swiadek">
+            <option value="–">– (brak / zdalna)</option>
+            <option value="DD">DD</option>
+            <option value="TZ">TZ</option>
+            <option value="RS">RS</option>
+            <option value="PG">PG</option>
+          </select>
+        </div>
+        <div>
+          <label>Wykonawca *</label>
+          <select id="f-wykon">
+            <option value="">— wybierz —</option>
+            <option value="DD">DD</option>
+            <option value="TZ">TZ</option>
+            <option value="RS">RS</option>
+            <option value="PG">PG</option>
+          </select>
+        </div>
+        <div>
+          <label>Nr karty</label>
+          <input type="text" id="f-karta" placeholder="Nr dokumentacji" />
+        </div>
+        <div class="full">
+          <label>Uwagi</label>
+          <textarea id="f-uwagi" placeholder="Dodatkowe informacje..."></textarea>
+        </div>
+      </div>
+      <button class="btn-submit" id="btn-submit" onclick="submitForm()">Zapisz wizytę →</button>
+      <div class="msg" id="form-msg"></div>
+    </div>
+
+<!-- INSTRUKCJA HIDDEN
+    <!-- INSTRUKCJA -->
+    <div style="display:none">HIDDEN</div>
+    <!--
+    <div class="form-card" id="instrukcja">
+      <h2>📋 Instrukcja konfiguracji (jednorazowa, 5 minut)</h2>
+      <div style="font-size:0.85rem;line-height:1.7;color:var(--text)">
+        <p><strong>Krok 1.</strong> Utwórz nowy Google Sheets. Nadaj mu nazwę np. "Monitoring Wizyt".</p>
+        <p><strong>Krok 2.</strong> W Google Sheets kliknij <code>Rozszerzenia → Apps Script</code>.</p>
+        <p><strong>Krok 3.</strong> Usuń domyślny kod i wklej poniższy skrypt:</p>
+        <pre style="background:#1e293b;color:#e2e8f0;padding:1rem;border-radius:8px;font-size:0.75rem;overflow-x:auto;margin:8px 0">
+function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = JSON.parse(e.postData.contents);
+  sheet.appendRow([
+    data.data, data.projekt, data.nruslugi, data.firma,
+    data.ilosc, data.forma, data.miejsce, data.stala,
+    data.swiadek, data.wykon, data.karta, data.uwagi,
+    new Date().toLocaleString('pl-PL')
+  ]);
+  return ContentService
+    .createTextOutput(JSON.stringify({status:'ok'}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = sheet.getDataRange().getValues();
+  return ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}</pre>
+        <p><strong>Krok 4.</strong> Kliknij <code>Wdróż → Nowe wdrożenie</code> → typ: <em>Aplikacja internetowa</em> → "Kto ma dostęp": <strong>Wszyscy</strong> → Wdróż.</p>
+        <p><strong>Krok 5.</strong> Skopiuj URL wdrożenia (zaczyna się od <code>https://script.google.com/macros/s/...</code>) i wklej go w pole URL poniżej.</p>
+        <p><strong>Krok 6.</strong> W pole "ID Sheets" wklej ID swojego arkusza (z adresu URL).</p>
+
+        <div style="margin-top:12px;padding:12px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
+          <label style="font-size:0.8rem">URL Apps Script (Web App URL):</label>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <input type="text" id="script-url-input" placeholder="https://script.google.com/macros/s/ABC.../exec" style="flex:1" />
+            <button onclick="saveScriptUrl()" style="padding:6px 14px;background:var(--blue);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap">Zapisz URL</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+-->
+  </div>
+
+  <!-- ═══ TAB: LISTY PROJEKTÓW ═══ -->
+  <div id="tab-list171" class="section-hidden">
+    <div class="table-wrap">
+      <div class="table-header">
+        <h2>Projekt 17.1 – wszystkie wpisy</h2>
+        <button class="btn-refresh" onclick="loadData()">↻ Odśwież</button>
+      </div>
+      <div id="table-171-wrap"></div>
+    </div>
+  </div>
+
+  <div id="tab-list172" class="section-hidden">
+    <div class="table-wrap">
+      <div class="table-header">
+        <h2>Projekt 17.2 – wszystkie wpisy</h2>
+        <button class="btn-refresh" onclick="loadData()">↻ Odśwież</button>
+      </div>
+      <div id="table-172-wrap"></div>
+    </div>
+  </div>
+
+  <div id="tab-list66" class="section-hidden">
+    <div class="table-wrap">
+      <div class="table-header">
+        <h2>Projekt 6.6 – wszystkie wpisy</h2>
+        <button class="btn-refresh" onclick="loadData()">↻ Odśwież</button>
+      </div>
+      <div id="table-66-wrap"></div>
+    </div>
+  </div>
+
+  <!-- ═══ TAB: PODSUMOWANIE ═══ -->
+  <div id="tab-summary" class="section-hidden">
+    <div class="summary-grid">
+
+      <div class="stat-card">
+        <h3>Wizyty wg projektu</h3>
+        <table class="stat-table" id="stat-proj"></table>
+      </div>
+
+      <div class="stat-card">
+        <h3>Wizyty wg wykonawcy</h3>
+        <table class="stat-table" id="stat-wykon"></table>
+      </div>
+
+      <div class="stat-card">
+        <h3>Forma wizyt</h3>
+        <table class="stat-table" id="stat-forma"></table>
+      </div>
+
+      <div class="stat-card">
+        <h3>Uczestnicy objęci monitoringiem</h3>
+        <table class="stat-table" id="stat-uczestnicy"></table>
+      </div>
+
+    </div>
+
+    <!-- WEEKEND OPTIMISATION -->
+    <div class="opt-card">
+      <h3>🗓 Weekendy – racjonalizacja zasobów</h3>
+      <div id="opt-content">
+        <div class="empty-state">Brak wpisów weekendowych.</div>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+let SCRIPT_URL = localStorage.getItem('monit_script_url') || '';
+let SHEET_ID   = localStorage.getItem('monit_sheet_id')   || '';
+let allRows    = [];
+
+const STALE = { '17.1': ['DD','TZ'], '17.2': ['DD','RS'], '6.6': ['PG','TZ'] };
+const PROJ_COLORS = { '17.1':'tag-171', '17.2':'tag-172', '6.6':'tag-66' };
+const COL_HDRS = ['Data','Projekt','Nr usługi','Firma','Il. osób','Forma','Miejsce',
+                  'Os. stała','Świadek','Wykonawca','Nr karty','Uwagi','Dodano'];
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+window.onload = () => {
+  // set today
+  document.getElementById('f-data').value = new Date().toISOString().split('T')[0];
+
+  if (SCRIPT_URL) {
+    document.getElementById('script-url-input').value = SCRIPT_URL;
+  } else {
+    document.getElementById('config-banner').classList.add('show');
+  }
+  if (SHEET_ID)   document.getElementById('sheet-id-input').value   = SHEET_ID;
+
+  if (SCRIPT_URL) loadData();
+};
+
+// ── TABS ───────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const id = tab.dataset.tab;
+    ['form','list171','list172','list66','summary'].forEach(t => {
+      document.getElementById('tab-' + t).classList.toggle('section-hidden', t !== id);
+    });
+    if (id === 'summary') renderSummary();
+  });
+});
+
+// ── CONFIG ─────────────────────────────────────────────────────────────────
+function saveScriptUrl() {
+  SCRIPT_URL = document.getElementById('script-url-input').value.trim();
+  localStorage.setItem('monit_script_url', SCRIPT_URL);
+  document.getElementById('config-banner').classList.remove('show');
+  loadData();
+}
+function saveSheetId() {
+  SHEET_ID = document.getElementById('sheet-id-input').value.trim();
+  localStorage.setItem('monit_sheet_id', SHEET_ID);
+}
+
+// ── FORM ───────────────────────────────────────────────────────────────────
+function updateStala() {
+  const proj = document.getElementById('f-proj').value;
+  const sel = document.getElementById('f-stala');
+  sel.innerHTML = '';
+  if (!proj) { sel.innerHTML = '<option>— wybierz projekt —</option>'; return; }
+  STALE[proj].forEach(p => {
+    const o = document.createElement('option');
+    o.value = o.textContent = p;
+    sel.appendChild(o);
+  });
+  // update form accent
+  const card = document.querySelector('.form-card');
+  card.className = 'form-card proj-' + proj.replace('.','');
+}
+
+async function submitForm() {
+  const btn = document.getElementById('btn-submit');
+  const msg = document.getElementById('form-msg');
+  msg.className = 'msg';
+
+  const proj  = document.getElementById('f-proj').value;
+  const data  = document.getElementById('f-data').value;
+  const firma = document.getElementById('f-firma').value.trim();
+  const forma = document.getElementById('f-forma').value;
+  const stala = document.getElementById('f-stala').value;
+  const wykon = document.getElementById('f-wykon').value;
+
+  if (!proj || !data || !firma || !forma || !stala || !wykon) {
+    msg.textContent = '⚠ Uzupełnij wymagane pola (oznaczone *).';
+    msg.className = 'msg err'; return;
+  }
+  if (!SCRIPT_URL) {
+    msg.textContent = '⚠ Najpierw skonfiguruj URL Apps Script (patrz instrukcja poniżej).';
+    msg.className = 'msg err'; return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span>Zapisuję...';
+
+  const payload = {
+    data, projekt: proj,
+    nruslugi: document.getElementById('f-nruslugi').value.trim(),
+    firma,
+    ilosc:    document.getElementById('f-ilosc').value || '',
+    forma,
+    miejsce:  document.getElementById('f-miejsce').value.trim(),
+    stala, swiadek: document.getElementById('f-swiadek').value,
+    wykon,
+    karta:    document.getElementById('f-karta').value.trim(),
+    uwagi:    document.getElementById('f-uwagi').value.trim(),
+  };
+
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    msg.textContent = '✅ Wizyta zapisana pomyślnie!';
+    msg.className = 'msg ok';
+    clearForm();
+    setTimeout(() => loadData(), 1500);
+  } catch(e) {
+    msg.textContent = '❌ Błąd połączenia. Sprawdź URL skryptu.';
+    msg.className = 'msg err';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Zapisz wizytę →';
+}
+
+function clearForm() {
+  ['f-nruslugi','f-firma','f-ilosc','f-miejsce','f-karta','f-uwagi'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('f-data').value = new Date().toISOString().split('T')[0];
+}
+
+// ── LOAD DATA ──────────────────────────────────────────────────────────────
+async function loadData() {
+  if (!SCRIPT_URL) return;
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=get', { mode: 'cors' });
+    const raw = await res.json();
+    allRows = raw.slice(1); // skip header row if exists
+    renderTables();
+  } catch(e) {
+    // silent – data might not be available yet
+    console.warn('Could not load data:', e);
+  }
+}
+
+// ── RENDER TABLES ──────────────────────────────────────────────────────────
+function isWeekend(dateStr) {
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  return d.getDay() === 0 || d.getDay() === 6;
+}
+
+function formatDate(val) {
+  if (!val) return '';
+  const d = new Date(val);
+  if (isNaN(d)) return val;
+  const days = ['Nd','Pon','Wt','Śr','Czw','Pt','Sob'];
+  return d.toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit',year:'numeric'})
+    + ' ' + days[d.getDay()];
+}
+
+function buildTable(rows) {
+  if (!rows.length) return '<div class="empty-state">Brak wpisów w tym projekcie.</div>';
+  let html = '<table><thead><tr>';
+  COL_HDRS.forEach(h => html += `<th>${h}</th>`);
+  html += '</tr></thead><tbody>';
+  rows.forEach(row => {
+    const wk = isWeekend(row[0]);
+    const proj = row[1] || '';
+    const tagClass = PROJ_COLORS[proj] || '';
+    html += `<tr class="${wk ? 'weekend' : ''}">`;
+    row.forEach((cell, ci) => {
+      let val = cell ?? '';
+      if (ci === 0) val = formatDate(val);
+      if (ci === 1) val = `<span class="proj-tag ${tagClass}">${val}</span>${wk ? '<span class="proj-tag tag-wk">WK</span>' : ''}`;
+      html += `<td>${val}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  return html;
+}
+
+function renderTables() {
+  ['17.1','17.2','6.6'].forEach(p => {
+    const filtered = allRows.filter(r => r[1] === p);
+    const id = 'table-' + p.replace('.','') + '-wrap';
+    document.getElementById(id).innerHTML = buildTable(filtered);
+  });
+}
+
+// ── SUMMARY ────────────────────────────────────────────────────────────────
+function count(arr, col, val) {
+  return arr.filter(r => r[col] === val).length;
+}
+function sum(arr, col) {
+  return arr.reduce((acc, r) => acc + (parseFloat(r[col]) || 0), 0);
+}
+
+function renderSummary() {
+  const projs   = ['17.1','17.2','6.6'];
+  const formy   = ['Stacjonarna','Zdalna','Mieszana'];
+  const persons = ['DD','TZ','RS','PG'];
+
+  // --- wizyty wg projektu ---
+  let html = '<tr><th>Projekt</th><th class="num">Wizyty</th><th class="num">Weekend</th></tr>';
+  let tot = 0, totWk = 0;
+  projs.forEach(p => {
+    const rows = allRows.filter(r => r[1] === p);
+    const wk = rows.filter(r => isWeekend(r[0])).length;
+    tot += rows.length; totWk += wk;
+    html += `<tr><td><span class="proj-tag ${PROJ_COLORS[p]}">${p}</span></td>
+             <td class="num">${rows.length}</td>
+             <td class="num" style="color:var(--warn)">${wk || '–'}</td></tr>`;
+  });
+  html += `<tr><td><strong>ŁĄCZNIE</strong></td><td class="num"><strong>${tot}</strong></td>
+           <td class="num" style="color:var(--warn)"><strong>${totWk}</strong></td></tr>`;
+  document.getElementById('stat-proj').innerHTML = html;
+
+  // --- wg wykonawcy ---
+  html = '<tr><th>Osoba</th><th class="num">Wizyty</th><th class="num">Weekendy</th></tr>';
+  let totP = 0, totPwk = 0;
+  persons.forEach(p => {
+    const rows = allRows.filter(r => r[9] === p);
+    const wk = rows.filter(r => isWeekend(r[0])).length;
+    totP += rows.length; totPwk += wk;
+    html += `<tr><td><strong>${p}</strong></td>
+             <td class="num">${rows.length}</td>
+             <td class="num" style="color:var(--warn)">${wk || '–'}</td></tr>`;
+  });
+  html += `<tr><td><strong>ŁĄCZNIE</strong></td>
+           <td class="num"><strong>${totP}</strong></td>
+           <td class="num" style="color:var(--warn)"><strong>${totPwk}</strong></td></tr>`;
+  document.getElementById('stat-wykon').innerHTML = html;
+
+  // --- forma ---
+  html = '<tr><th>Forma</th><th class="num">Liczba</th><th class="num">%</th></tr>';
+  formy.forEach(f => {
+    const n = count(allRows, 5, f);
+    const pct = tot ? Math.round(n/tot*100) : 0;
+    html += `<tr><td>${f}</td><td class="num">${n}</td><td class="num">${pct}%</td></tr>`;
+  });
+  document.getElementById('stat-forma').innerHTML = html;
+
+  // --- uczestnicy ---
+  html = '<tr><th>Projekt</th><th class="num">Uczestnicy</th></tr>';
+  let totU = 0;
+  projs.forEach(p => {
+    const rows = allRows.filter(r => r[1] === p);
+    const u = sum(rows, 4);
+    totU += u;
+    html += `<tr><td><span class="proj-tag ${PROJ_COLORS[p]}">${p}</span></td>
+             <td class="num">${u}</td></tr>`;
+  });
+  html += `<tr><td><strong>ŁĄCZNIE</strong></td><td class="num"><strong>${totU}</strong></td></tr>`;
+  document.getElementById('stat-uczestnicy').innerHTML = html;
+
+  // --- weekend optimisation ---
+  renderOptimisation();
+}
+
+function renderOptimisation() {
+  const wkRows = allRows.filter(r => isWeekend(r[0]) && r[0]);
+  const opt = document.getElementById('opt-content');
+
+  if (!wkRows.length) {
+    opt.innerHTML = '<div class="empty-state">Brak wpisów weekendowych – tu pojawią się sugestie łączenia wyjazdów.</div>';
+    return;
+  }
+
+  // group by date
+  const byDate = {};
+  wkRows.forEach(r => {
+    const d = new Date(r[0]).toLocaleDateString('pl-PL');
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push(r);
+  });
+
+  let html = '';
+  Object.entries(byDate).sort().forEach(([date, rows]) => {
+    const persons = [...new Set([...rows.map(r=>r[7]), ...rows.map(r=>r[9])].filter(Boolean))];
+    const projs   = [...new Set(rows.map(r=>r[1]).filter(Boolean))];
+    const places  = [...new Set(rows.map(r=>r[6]).filter(Boolean))];
+    const canCombine = persons.length < rows.length || places.length === 1;
+
+    const dayName = new Date(rows[0][0]).toLocaleDateString('pl-PL',{weekday:'long'});
+
+    html += `<div class="opt-day">
+      <div class="opt-day-header">
+        📅 ${date} (${dayName})
+        <span class="pill">${rows.length} wizyt${rows.length>1?'y/wizyt':''}</span>
+        <span style="margin-left:auto;font-size:0.72rem;color:#94a3b8">Projekty: ${projs.join(', ')}</span>
+        ${canCombine ? '<span class="pill combine">✅ Można połączyć</span>' : ''}
+      </div>
+      <div class="opt-persons">
+        ${persons.map(p=>`<span class="person-chip">${p}</span>`).join('')}
+      </div>
+      <div class="opt-rows">`;
+
+    rows.forEach(r => {
+      const pc = PROJ_COLORS[r[1]] || '';
+      html += `<div class="opt-row">
+        <span class="proj-tag ${pc}">${r[1]}</span>
+        <strong>${r[3]}</strong>
+        ${r[6] ? `<span style="color:var(--muted)">📍 ${r[6]}</span>` : ''}
+        <span style="margin-left:auto;color:var(--muted);font-size:0.75rem">
+          OS: ${r[7] || '–'} · Wyk: ${r[9] || '–'}
+        </span>
+      </div>`;
+    });
+
+    if (canCombine) {
+      html += `<div class="combine-banner">
+        💡 ${persons.length === 1
+          ? `${persons[0]} obsługuje ${rows.length} wizyt – jeden wyjazd wystarczy`
+          : `Te osoby są już w terenie – sprawdź czy kolejna wizyta może dołączyć do tego dnia`}
+      </div>`;
+    }
+
+    html += `</div></div>`;
+  });
+
+  opt.innerHTML = html;
+}
+</script>
+</body>
+</html>
